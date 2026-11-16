@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gotham Volleyball — New Gym Breakeven Calculator</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --border: #e0ded8;
+    --text: #1f1f1d;
+    --muted: #6b6a65;
+    --accent: #185fa5;
+    --accent-bg: #e6f1fb;
+    --danger: #a32d2d;
+    --danger-bg: #fcebeb;
+    --success: #27500a;
+    --success-bg: #eaf3de;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 2rem 1.5rem 4rem;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin: 0 0 2rem; }
+  h2 { font-size: 16px; font-weight: 600; margin: 2rem 0 0.75rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 6px; text-align: left; vertical-align: middle; }
+  thead th {
+    color: var(--muted); font-weight: 500; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: #fff; color: var(--text);
+  }
+  input[type=number] { width: 80px; }
+  .col-name input { width: 140px; }
+  .col-rev, .col-cost { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .row-remove {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 16px; padding: 4px 8px;
+  }
+  .row-remove:hover { color: var(--danger); }
+  .add-row-btn, .btn {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text);
+  }
+  .add-row-btn:hover, .btn:hover { background: #f2f1ee; }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin-top: 1.5rem;
+  }
+  .metric {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .metric.highlight { background: var(--accent-bg); border-color: var(--accent); }
+  .metric.highlight .metric-value { color: var(--accent); }
+  .metric-label { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; margin: 0; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+  .costs-row { display: grid; grid-template-columns: 1fr 140px 1fr; gap: 12px; align-items: end; margin-top: 1rem; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .cost-line {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .cost-line:last-of-type { border-bottom: none; }
+  .cost-line label { font-size: 13px; color: var(--text); flex: 1; }
+  .cost-line input { width: 140px; flex: none; }
+  .cost-amt {
+    width: 100px; flex: none; text-align: right;
+    font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted);
+  }
+  .banner {
+    border-radius: 10px; padding: 14px 16px; font-size: 14px; margin-top: 1.25rem;
+  }
+  .banner.ok { background: var(--success-bg); color: var(--success); }
+  .banner.warn { background: var(--danger-bg); color: var(--danger); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 0.5rem; }
+  footer { margin-top: 2.5rem; font-size: 12px; color: var(--muted); text-align: center; }
+
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: 90px repeat(7, 1fr);
+    gap: 4px;
+  }
+  .schedule-grid .head, .schedule-grid .rowlabel {
+    font-size: 12px; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 6px 4px;
+  }
+  .schedule-grid .rowlabel { justify-content: flex-start; }
+  .schedule-grid select {
+    padding: 8px 4px; font-size: 12px; text-align: center;
+    border-radius: 8px; border: 1px solid var(--border);
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+    <div>
+      <h1>Gotham Volleyball — new gym breakeven calculator</h1>
+      <p class="subtitle">Full-year gym lease, shared across all programming. Set the weekly schedule, tune each program's assumptions, and the breakeven venue budget updates live.</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="note" id="save-status" style="margin:0;"></span>
+      <button class="btn" id="save-btn">Save</button>
+    </div>
+  </div>
+
+  <h2>Weekly gym schedule</h2>
+  <div class="card">
+    <p class="note" style="margin-top:0;">Assign a program to each day/time slot. This is a typical week — the number of slots/week per program drives the calculation below.</p>
+    <div class="schedule-grid" id="schedule-grid"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <h2>Program revenues and costs</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:16%">Program</th>
+          <th>Slots / week<br><span style="font-weight:400;text-transform:none;">(from schedule)</span></th>
+          <th>Weeks / year<br>active</th>
+          <th># of paying<br>slots</th>
+          <th>Fee per<br>slot ($)</th>
+          <th>Ref ($)<br>per slot</th>
+          <th>Coach ($)<br>per slot</th>
+          <th>Security ($)<br>per slot</th>
+          <th class="col-rev">Annual<br>revenue</th>
+          <th class="col-cost">Annual<br>non-venue cost</th>
+        </tr>
+      </thead>
+      <tbody id="program-rows"></tbody>
+      <tfoot>
+        <tr style="font-weight:500; border-top:1px solid var(--border-strong);">
+          <td>Gross total</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="col-rev" id="total-revenue-row">$0</td>
+          <td class="col-cost" id="total-nonvenue-row">$0</td>
+        </tr>
+        <tr>
+          <td style="white-space:nowrap;">
+            Fees
+            <input type="number" id="processing-fee" value="0" min="0" max="20" step="0.1" style="width:60px; display:inline-block; margin-left:6px;">%
+          </td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="col-rev" id="fees-revenue-row">$0</td>
+          <td class="col-cost" id="fees-cost-row">$0</td>
+        </tr>
+        <tr style="font-weight:500; border-top:1px solid var(--border-strong);">
+          <td>Net total</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="col-rev" id="net-total-revenue-row">$0</td>
+          <td class="col-cost" id="net-total-cost-row">$0</td>
+        </tr>
+      </tfoot>
+    </table>
+    <p class="note">Two blank rows are included below your programs in case you need to add one — just fill in a name and its assumptions.</p>
+  </div>
+
+  <h2>Fixed costs</h2>
+  <div class="card">
+    <div class="cost-line">
+      <label>End of season party</label>
+      <div style="display:flex; align-items:center; gap:6px; flex:none;">
+        <input type="number" id="party-members" value="0" min="0" step="1" style="width:80px;" title="Net new members">
+        <span class="note" style="margin:0; white-space:nowrap;">members ×</span>
+        <input type="number" id="party-cost" value="0" min="0" step="1" style="width:80px;" title="Cost per member ($)">
+        <span class="note" style="margin:0; white-space:nowrap;">$/member</span>
+      </div>
+      <span class="cost-amt" id="party-amt">$0</span>
+    </div>
+    <div class="cost-line">
+      <label for="equipment">Equipment ($)</label>
+      <input type="number" id="equipment" value="0" min="0" step="100">
+      <span class="cost-amt" id="equipment-amt">$0</span>
+    </div>
+    <div class="cost-line">
+      <label for="insurance">Incremental annual insurance for this venue ($)</label>
+      <input type="number" id="insurance" value="0" min="0" step="100">
+      <span class="cost-amt" id="insurance-amt">$0</span>
+    </div>
+    <div class="cost-line">
+      <label for="other-fixed">Other fixed annual costs ($)</label>
+      <input type="number" id="other-fixed" value="0" min="0" step="100">
+      <span class="cost-amt" id="other-fixed-amt">$0</span>
+    </div>
+    <div class="cost-line">
+      <label for="reserve">Safety margin (%)</label>
+      <input type="number" id="reserve" value="0" min="0" max="50" step="1">
+      <span class="cost-amt" id="reserve-amt">$0</span>
+    </div>
+    <p class="note">Safety margin shaves the breakeven venue budget down by this percentage, so the number isn't razor-thin against a $0 surplus. Payment processing fee is now set in the Fees row of the program table above.</p>
+  </div>
+
+  <h2>Result</h2>
+  <div class="summary-grid">
+    <div class="metric">
+      <p class="metric-label">Total programming revenue</p>
+      <p class="metric-value" id="total-revenue">$0</p>
+    </div>
+    <div class="metric">
+      <p class="metric-label">Net revenue after processing fees</p>
+      <p class="metric-value" id="net-revenue">$0</p>
+    </div>
+    <div class="metric">
+      <p class="metric-label">Total non-venue costs</p>
+      <p class="metric-value" id="total-nonvenue">$0</p>
+    </div>
+    <div class="metric highlight">
+      <p class="metric-label">Max annual venue budget (breakeven)</p>
+      <p class="metric-value" id="max-venue">$0</p>
+      <p class="metric-sub" id="max-venue-monthly">$0 / month</p>
+    </div>
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+  <footer>Gotham Volleyball League Treasurer's Wiki — venue budget model.</footer>
+</div>
+
+<script>
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const PARTS = ["Morning","Afternoon","Evening"];
+const COLORS = ["#378ADD","#1D9E75","#D85A30","#D4537E","#BA7517","#7F77DD","#639922"];
+
+const STORAGE_KEY = "gotham-gym-budget-v6";
+
+const DEFAULT_PROGRAMS = [
+  { name: "Open Play", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
+  { name: "Training", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
+  { name: "Division Play", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
+  { name: "Friendship Tournaments", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
+  { name: "", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
+  { name: "", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 }
+];
+
+function defaultSchedule() {
+  const s = {};
+  DAYS.forEach(d => PARTS.forEach(p => { s[d + "-" + p] = ""; }));
+  return s;
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function persist() {
+  const equipment = parseFloat(document.getElementById("equipment").value) || 0;
+  const insurance = parseFloat(document.getElementById("insurance").value) || 0;
+  const otherFixed = parseFloat(document.getElementById("other-fixed").value) || 0;
+  const reserve = parseFloat(document.getElementById("reserve").value) || 0;
+  const processingFee = parseFloat(document.getElementById("processing-fee").value) || 0;
+  const partyMembers = parseFloat(document.getElementById("party-members").value) || 0;
+  const partyCost = parseFloat(document.getElementById("party-cost").value) || 0;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ programs, schedule, equipment, insurance, otherFixed, reserve, processingFee, partyMembers, partyCost }));
+  const status = document.getElementById("save-status");
+  if (status) {
+    status.textContent = "Saved " + new Date().toLocaleTimeString();
+    clearTimeout(persist._t);
+    persist._t = setTimeout(() => { status.textContent = ""; }, 2500);
+  }
+}
+
+const saved = loadSaved();
+let programs = saved && saved.programs ? saved.programs : JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+let schedule = saved && saved.schedule ? saved.schedule : defaultSchedule();
+
+function fmt(n) {
+  return "$" + Math.round(n).toLocaleString();
+}
+
+function programColor(name) {
+  const i = programs.findIndex(p => p.name === name);
+  return i === -1 ? "#b4b2a9" : COLORS[i % COLORS.length];
+}
+
+function renderLegend() {
+  const legend = document.getElementById("legend");
+  legend.innerHTML = programs.filter(p => p.name.trim() !== "").map((p) =>
+    `<span><span class="swatch" style="background:${programColor(p.name)}"></span>${p.name}</span>`
+  ).join("") + `<span><span class="swatch" style="background:#e0ded8"></span>Empty</span>`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById("schedule-grid");
+  grid.innerHTML = "";
+  grid.appendChild(el("div", "head", ""));
+  DAYS.forEach(d => grid.appendChild(el("div", "head", d)));
+  PARTS.forEach(part => {
+    grid.appendChild(el("div", "rowlabel", part));
+    DAYS.forEach(day => {
+      const key = day + "-" + part;
+      const select = document.createElement("select");
+      select.dataset.key = key;
+      const emptyOpt = document.createElement("option");
+      emptyOpt.value = "";
+      emptyOpt.textContent = "—";
+      select.appendChild(emptyOpt);
+      programs.filter(p => p.name.trim() !== "").forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        opt.textContent = p.name;
+        if (schedule[key] === p.name) opt.selected = true;
+        select.appendChild(opt);
+      });
+      const val = schedule[key];
+      const color = val ? programColor(val) : "#e0ded8";
+      select.style.background = val ? color + "26" : "#fff";
+      select.style.borderColor = val ? color : "var(--border)";
+      select.style.color = val ? color : "var(--text)";
+      select.addEventListener("change", e => {
+        schedule[key] = e.target.value;
+        renderGrid();
+        renderRows();
+        recalc();
+      });
+      grid.appendChild(select);
+    });
+  });
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement("div");
+  e.className = cls;
+  e.textContent = text;
+  return e;
+}
+
+function slotsPerWeek(name) {
+  if (!name || name.trim() === "") return 0;
+  return Object.values(schedule).filter(v => v === name).length;
+}
+
+function renderRows() {
+  const tbody = document.getElementById("program-rows");
+  tbody.innerHTML = "";
+  let totalRevenue = 0, totalNonVenue = 0;
+  programs.forEach((p, i) => {
+    const slots = slotsPerWeek(p.name);
+    const revenue = slots * p.weeks * p.players * p.fee;
+    const nonVenueCost = slots * p.weeks * (p.ref + p.coach + p.security);
+    totalRevenue += revenue;
+    totalNonVenue += nonVenueCost;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="col-name"><input type="text" data-i="${i}" data-f="name" value="${p.name}"></td>
+      <td style="text-align:center;">${slots}</td>
+      <td><input type="number" data-i="${i}" data-f="weeks" value="${p.weeks}" min="0" max="52" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="players" value="${p.players}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="fee" value="${p.fee}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="ref" value="${p.ref}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="coach" value="${p.coach}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="security" value="${p.security}" min="0" step="1"></td>
+      <td class="col-rev">${fmt(revenue)}</td>
+      <td class="col-cost">${fmt(nonVenueCost)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("total-revenue-row").textContent = fmt(totalRevenue);
+  document.getElementById("total-nonvenue-row").textContent = fmt(totalNonVenue);
+
+  tbody.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("input", onFieldChange);
+  });
+}
+
+function onFieldChange(e) {
+  const i = +e.target.dataset.i;
+  const f = e.target.dataset.f;
+  if (f === "name") {
+    const oldName = programs[i].name;
+    const newName = e.target.value;
+    Object.keys(schedule).forEach(k => { if (schedule[k] === oldName) schedule[k] = newName; });
+    programs[i].name = newName;
+  } else {
+    programs[i][f] = parseFloat(e.target.value) || 0;
+  }
+  renderRows();
+  renderGrid();
+  renderLegend();
+  recalc();
+  focusField(i, f);
+}
+
+function focusField(i, f) {
+  const sel = `[data-i="${i}"][data-f="${f}"]`;
+  const el = document.querySelector(sel);
+  if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; }
+}
+
+function recalc() {
+  let grossRevenue = 0, grossNonVenue = 0;
+  programs.forEach(p => {
+    const slots = slotsPerWeek(p.name);
+    grossRevenue += slots * p.weeks * p.players * p.fee;
+    grossNonVenue += slots * p.weeks * (p.ref + p.coach + p.security);
+  });
+
+  const equipment = parseFloat(document.getElementById("equipment").value) || 0;
+  const insurance = parseFloat(document.getElementById("insurance").value) || 0;
+  const otherFixed = parseFloat(document.getElementById("other-fixed").value) || 0;
+  const reservePct = parseFloat(document.getElementById("reserve").value) || 0;
+  const processingFeePct = parseFloat(document.getElementById("processing-fee").value) || 0;
+  const partyMembers = parseFloat(document.getElementById("party-members").value) || 0;
+  const partyCost = parseFloat(document.getElementById("party-cost").value) || 0;
+  const partyAmt = partyMembers * partyCost;
+
+  const feeOnRevenue = grossRevenue * (processingFeePct / 100);
+  const netRevenue = grossRevenue - feeOnRevenue;
+  const totalNonVenue = grossNonVenue + equipment + insurance + otherFixed + partyAmt;
+
+  const rawBreakeven = netRevenue - totalNonVenue;
+  const maxVenue = Math.max(0, rawBreakeven * (1 - reservePct / 100));
+  const reserveAmt = rawBreakeven - maxVenue;
+
+  document.getElementById("fees-revenue-row").textContent = "-" + fmt(feeOnRevenue);
+  document.getElementById("fees-cost-row").textContent = fmt(0);
+  document.getElementById("net-total-revenue-row").textContent = fmt(netRevenue);
+  document.getElementById("net-total-cost-row").textContent = fmt(grossNonVenue);
+
+  document.getElementById("party-amt").textContent = fmt(partyAmt);
+  document.getElementById("equipment-amt").textContent = fmt(equipment);
+  document.getElementById("insurance-amt").textContent = fmt(insurance);
+  document.getElementById("other-fixed-amt").textContent = fmt(otherFixed);
+  document.getElementById("reserve-amt").textContent = fmt(reserveAmt);
+
+  document.getElementById("total-revenue").textContent = fmt(grossRevenue);
+  document.getElementById("net-revenue").textContent = fmt(netRevenue);
+  document.getElementById("total-nonvenue").textContent = fmt(totalNonVenue);
+  document.getElementById("max-venue").textContent = fmt(maxVenue);
+  document.getElementById("max-venue-monthly").textContent = fmt(maxVenue / 12) + " / month";
+
+  const banner = document.getElementById("banner");
+  if (rawBreakeven < 0) {
+    banner.className = "banner warn";
+    banner.textContent = "Programming revenue doesn't cover non-venue costs alone — the venue budget is $0 and this combination of programs runs a deficit before rent is even considered.";
+  } else {
+    banner.className = "banner ok";
+    banner.textContent = "Breakeven venue budget is " + fmt(maxVenue) + "/year (" + fmt(maxVenue / 12) + "/month).";
+  }
+
+  persist();
+}
+
+document.getElementById("save-btn").addEventListener("click", () => {
+  persist();
+});
+
+["equipment", "insurance", "other-fixed", "reserve", "processing-fee", "party-members", "party-cost"].forEach(id => {
+  document.getElementById(id).addEventListener("input", recalc);
+});
+
+if (saved) {
+  document.getElementById("insurance").value = saved.insurance || 0;
+  document.getElementById("other-fixed").value = saved.otherFixed || 0;
+  document.getElementById("reserve").value = saved.reserve || 0;
+  document.getElementById("processing-fee").value = saved.processingFee || 0;
+  document.getElementById("party-members").value = saved.partyMembers || 0;
+  document.getElementById("party-cost").value = saved.partyCost || 0;
+  document.getElementById("equipment").value = saved.equipment || 0;
+}
+
+renderRows();
+renderGrid();
+renderLegend();
+recalc();
+</script>
+</body>
+</html>
