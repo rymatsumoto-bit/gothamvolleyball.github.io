@@ -116,6 +116,35 @@
   .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--muted); }
   .legend span { display: inline-flex; align-items: center; gap: 5px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  [hidden] { display: none !important; }
+  .btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .table-scroll { overflow-x: auto; }
+  .table-scroll table { min-width: 720px; }
+  #settings-table input[type=text] { width: 160px; }
+  #settings-table input[type=number] { width: 70px; }
+  #settings-table select { width: auto; }
+  .has-def { cursor: help; }
+  .has-def:hover { color: var(--text); }
+  .defs { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .defs h3 { font-size: 13px; font-weight: 600; margin: 1rem 0 0.4rem; color: var(--accent); }
+  .defs h3:first-child { margin-top: 0; }
+  .defs dl { margin: 0; display: grid; grid-template-columns: 170px 1fr; gap: 6px 16px; font-size: 13px; }
+  .defs dt { font-weight: 500; }
+  .defs dd { margin: 0; color: var(--muted); }
+  @media (max-width: 600px) {
+    .defs dl { grid-template-columns: 1fr; gap: 0; }
+    .defs dd { margin-bottom: 8px; }
+  }
+  .group-head th { text-align: center; color: var(--accent); border-bottom: none; padding-bottom: 0; }
+  .group-head th span { display: block; padding-bottom: 4px; margin: 0 6px; border-bottom: 2px solid var(--accent); }
+  .unit-tag { font-size: 11px; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+  @media (max-width: 480px) {
+    body { padding: 1rem 16px 3rem; }
+    .costs-row { grid-template-columns: 1fr; }
+    .cost-line { flex-wrap: wrap; }
+    .cost-line input { width: 100px; }
+  }
 </style>
 </head>
 <body>
@@ -126,12 +155,15 @@
       <h1>Gotham Volleyball — new gym breakeven calculator</h1>
       <p class="subtitle">Full-year gym lease, shared across all programming. Set the weekly schedule, tune each program's assumptions, and the breakeven venue budget updates live.</p>
     </div>
-    <div style="display:flex; align-items:center; gap:8px;">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="btn active" id="nav-calc">Calculator</button>
+      <button class="btn" id="nav-settings">Settings</button>
       <span class="note" id="save-status" style="margin:0;"></span>
       <button class="btn" id="save-btn">Save</button>
     </div>
   </div>
 
+<div id="calc-view">
   <h2>Weekly gym schedule</h2>
   <div class="card">
     <p class="note" style="margin-top:0;">Assign a program to each day/time slot. This is a typical week — the number of slots/week per program drives the calculation below.</p>
@@ -141,17 +173,14 @@
 
   <h2>Program revenues and costs</h2>
   <div class="card">
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
           <th style="width:16%">Program</th>
           <th>Slots / week<br><span style="font-weight:400;text-transform:none;">(from schedule)</span></th>
-          <th>Weeks / year<br>active</th>
-          <th># of paying<br>slots</th>
-          <th>Fee per<br>slot ($)</th>
-          <th>Ref ($)<br>per slot</th>
-          <th>Coach ($)<br>per slot</th>
-          <th>Security ($)<br>per slot</th>
+          <th>Sessions<br>/ year</th>
+          <th>Paying units<br>or teams<br>per slot</th>
           <th class="col-rev">Annual<br>revenue</th>
           <th class="col-cost">Annual<br>non-venue cost</th>
         </tr>
@@ -160,10 +189,6 @@
       <tfoot>
         <tr style="font-weight:500; border-top:1px solid var(--border-strong);">
           <td>Gross total</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
           <td></td>
           <td></td>
           <td></td>
@@ -178,10 +203,6 @@
           <td></td>
           <td></td>
           <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
           <td class="col-rev" id="fees-revenue-row">$0</td>
           <td class="col-cost" id="fees-cost-row">$0</td>
         </tr>
@@ -190,16 +211,13 @@
           <td></td>
           <td></td>
           <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
           <td class="col-rev" id="net-total-revenue-row">$0</td>
           <td class="col-cost" id="net-total-cost-row">$0</td>
         </tr>
       </tfoot>
     </table>
-    <p class="note">Two blank rows are included below your programs in case you need to add one — just fill in a name and its assumptions.</p>
+    </div>
+    <p class="note">Add, remove or rename programs, and set their payments, paying units, fee per unit, schedule and costs, in <a href="#settings">Settings</a>. Only the number of teams is entered here, per slot: each slot on the schedule is one division or level.</p>
   </div>
 
   <h2>Fixed costs</h2>
@@ -259,6 +277,47 @@
   </div>
 
   <div class="banner" id="banner"></div>
+</div>
+
+<div id="settings-view" hidden>
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
+    <h2>Program settings</h2>
+    <button class="btn" id="edit-settings">Edit</button>
+  </div>
+  <div class="card">
+    <p class="note" style="margin-top:0;">Define how each program earns revenue and how it is scheduled. Each slot on the weekly schedule is one division or level.</p>
+    <div class="table-scroll">
+    <table id="settings-table">
+      <thead>
+        <tr class="group-head">
+          <th></th>
+          <th colspan="5"><span>Revenue</span></th>
+          <th colspan="2"><span>Scheduling</span></th>
+          <th colspan="3"><span>Costs</span></th>
+          <th></th>
+        </tr>
+        <tr>
+          <th>Program</th>
+          <th class="has-def" data-def="paymentType">Payment<br>type</th>
+          <th class="has-def" data-def="unitType">Unit<br>type</th>
+          <th class="has-def" data-def="payingUnits">Paying<br>units<br><span style="font-weight:400;text-transform:none;">(per team if Team)</span></th>
+          <th class="has-def" data-def="fee">Fee per<br>unit ($)</th>
+          <th class="has-def" data-def="seasons">Seasons<br>/ year</th>
+          <th class="has-def" data-def="weeksPerSeason">Weeks<br>/ season</th>
+          <th class="has-def" data-def="extraDays">Extra days<br>/ season</th>
+          <th class="has-def" data-def="refPerSeason">Referee ($)<br>/ season</th>
+          <th class="has-def" data-def="coachPerSeason">Coach ($)<br>/ season</th>
+          <th class="has-def" data-def="securityPerSession">Security ($)<br>/ session</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="settings-rows"></tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0;"><button class="btn" id="add-program">+ Add program</button></p>
+    <div id="definitions" class="defs"></div>
+  </div>
+</div>
 
   <footer>Gotham Volleyball League Treasurer's Wiki — venue budget model.</footer>
 </div>
@@ -270,14 +329,68 @@ const COLORS = ["#378ADD","#1D9E75","#D85A30","#D4537E","#BA7517","#7F77DD","#63
 
 const STORAGE_KEY = "gotham-gym-budget-v6";
 
+// Program shape.
+// Revenue (Settings): paymentType ("once" | "session"), unitType ("individual" | "team"),
+// payingUnits (per slot for "individual" programs; per team for "team" programs, where 0 = each team is the paying unit),
+// fee (dollars per paying unit), seasons.
+// Scheduling (Settings): weeksPerSeason, extraDays.
+// Costs (Settings): refPerSeason and coachPerSeason (per slot, per season), securityPerSession (per session).
+// Scenario inputs (calculator): `teams` per slot (for "team" programs).
+function newProgram(name, overrides) {
+  return Object.assign({
+    name, paymentType: "session", unitType: "individual", payingUnits: 0, fee: 0,
+    seasons: 2, weeksPerSeason: 0, extraDays: 0,
+    refPerSeason: 0, coachPerSeason: 0, securityPerSession: 0,
+    teams: 0
+  }, overrides);
+}
+
 const DEFAULT_PROGRAMS = [
-  { name: "Open Play", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
-  { name: "Training", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
-  { name: "Division Play", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
-  { name: "Friendship Tournaments", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
-  { name: "", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 },
-  { name: "", weeks: 0, players: 0, fee: 0, ref: 0, coach: 0, security: 0 }
+  newProgram("Open Play", { payingUnits: 30 }),
+  newProgram("Power Class", { paymentType: "once", weeksPerSeason: 10, payingUnits: 30 }),
+  newProgram("Division Play", { paymentType: "once", unitType: "team", payingUnits: 8, weeksPerSeason: 10, extraDays: 1, teams: 8 }),
+  newProgram("Friendship Tournaments", { unitType: "team" })
 ];
+
+// Reads a saved program of any older shape and fills in the new fields.
+// Original saves: `weeks` of play in one season, paid every week by `players` individuals. That is
+// 1 season, `weeks` payments per season, no groups, which reproduces the old revenue and cost exactly.
+// Shapes from earlier in development (`billing`, `unit`, `playersPerTeam`, `maxPerSlot`, `groupType` "none" or "class",
+// `playersPerGroup`, `unitsPerGroup`, fee basis "player") are converted too.
+function migrateProgram(p) {
+  const m = Object.assign(newProgram(p.name || ""), p);
+  if (p.weeksPerSeason === undefined) {
+    m.seasons = 1;
+    m.weeksPerSeason = parseFloat(p.weeks) || 0;
+    m.paymentsPerSeason = m.weeksPerSeason;
+  } else if (p.billing !== undefined) {
+    m.paymentsPerSeason = p.billing === "season" ? 1 : m.weeksPerSeason;
+    if (p.playersPerTeam > 0) { m.unitType = "team"; m.unitsPerTeam = p.playersPerTeam; }
+    else if (p.unit === "teams") { m.unitType = "team"; m.feeBasis = "group"; m.teams = p.players || 0; }
+  }
+  // Earlier versions stored a number of payments per season. One payment is a one-time fee; anything else
+  // was paid every week, which is what "per session" now means.
+  if (p.paymentType === undefined) m.paymentType = m.paymentsPerSeason === 1 ? "once" : "session";
+  if (p.groupType === "team") m.unitType = "team";
+  if (p.unitsPerGroup !== undefined) m.unitsPerTeam = p.unitsPerGroup;
+  else if (p.playersPerGroup !== undefined) m.unitsPerTeam = p.playersPerGroup;
+  if (m.unitType !== "team") { m.unitType = "individual"; m.unitsPerTeam = 0; }
+  else if (m.feeBasis === "group") m.unitsPerTeam = 0; // the fee was per team, so each team is the paying unit
+  // Paying units moved into Settings: individuals were entered per slot as `players`, teams as `unitsPerTeam`.
+  // A number typed into an individual program's Settings field (which was ignored then) is kept and wins.
+  if (p.payingUnits === undefined) {
+    m.payingUnits = m.unitType === "team"
+      ? (parseFloat(m.unitsPerTeam) || 0)
+      : (parseFloat(p.unitsPerTeam) || parseFloat(p.players) || 0);
+  }
+  // Costs moved into Settings. Referee and coach were dollars per session; they are now per season per slot, so
+  // multiply by the sessions each slot has in a season. That keeps every saved cost total exactly the same.
+  if (p.refPerSeason === undefined) m.refPerSeason = (parseFloat(p.ref) || 0) * (m.weeksPerSeason + m.extraDays);
+  if (p.coachPerSeason === undefined) m.coachPerSeason = (parseFloat(p.coach) || 0) * (m.weeksPerSeason + m.extraDays);
+  if (p.securityPerSession === undefined) m.securityPerSession = parseFloat(p.security) || 0;
+  ["weeks", "billing", "unit", "playersPerTeam", "maxPerSlot", "playersPerGroup", "groupType", "unitsPerGroup", "feeBasis", "paymentsPerSeason", "players", "unitsPerTeam", "ref", "coach", "security"].forEach(k => delete m[k]);
+  return m;
+}
 
 function defaultSchedule() {
   const s = {};
@@ -313,7 +426,10 @@ function persist() {
 }
 
 const saved = loadSaved();
-let programs = saved && saved.programs ? saved.programs : JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
+// Unnamed rows from older saves never had slots, so they contributed nothing and are dropped.
+let programs = saved && saved.programs
+  ? saved.programs.filter(p => (p.name || "").trim() !== "").map(migrateProgram)
+  : JSON.parse(JSON.stringify(DEFAULT_PROGRAMS));
 let schedule = saved && saved.schedule ? saved.schedule : defaultSchedule();
 
 function fmt(n) {
@@ -382,29 +498,42 @@ function slotsPerWeek(name) {
   return Object.values(schedule).filter(v => v === name).length;
 }
 
+// Everything the calculation needs for one program. Each schedule slot is one division or level.
+function programFigures(p) {
+  const slots = slotsPerWeek(p.name);
+  const seasons = p.seasons || 0;
+  const sessions = slots > 0 ? slots * p.weeksPerSeason * seasons + p.extraDays * seasons : 0;
+  // Paying units per slot. An individual program has them set directly. A team program has teams per slot,
+  // and pays per paying unit when paying units per team are set, otherwise each team is the paying unit.
+  const isTeam = p.unitType === "team";
+  const units = isTeam ? p.teams * (p.payingUnits > 0 ? p.payingUnits : 1) : p.payingUnits;
+  const payments = p.paymentType === "once" ? 1 : p.weeksPerSeason;
+  const revenue = seasons * slots * payments * units * p.fee;
+  const nonVenueCost = seasons * slots * (p.refPerSeason + p.coachPerSeason) + sessions * p.securityPerSession;
+  return { slots, sessions, isTeam, units, revenue, nonVenueCost };
+}
+
 function renderRows() {
   const tbody = document.getElementById("program-rows");
   tbody.innerHTML = "";
   let totalRevenue = 0, totalNonVenue = 0;
   programs.forEach((p, i) => {
-    const slots = slotsPerWeek(p.name);
-    const revenue = slots * p.weeks * p.players * p.fee;
-    const nonVenueCost = slots * p.weeks * (p.ref + p.coach + p.security);
-    totalRevenue += revenue;
-    totalNonVenue += nonVenueCost;
+    const f = programFigures(p);
+    totalRevenue += f.revenue;
+    totalNonVenue += f.nonVenueCost;
+    const unitCell = f.isTeam
+      ? `<input type="number" data-i="${i}" data-f="teams" value="${p.teams}" min="0" step="1"><span class="unit-tag">${p.payingUnits > 0 ? `teams × ${p.payingUnits} = ${f.units} paying units` : "teams"}</span>`
+      : `<span class="unit-tag" style="margin:0;">${f.units} paying units (Settings)</span>`;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="col-name"><input type="text" data-i="${i}" data-f="name" value="${p.name}"></td>
-      <td style="text-align:center;">${slots}</td>
-      <td><input type="number" data-i="${i}" data-f="weeks" value="${p.weeks}" min="0" max="52" step="1"></td>
-      <td><input type="number" data-i="${i}" data-f="players" value="${p.players}" min="0" step="1"></td>
-      <td><input type="number" data-i="${i}" data-f="fee" value="${p.fee}" min="0" step="1"></td>
-      <td><input type="number" data-i="${i}" data-f="ref" value="${p.ref}" min="0" step="1"></td>
-      <td><input type="number" data-i="${i}" data-f="coach" value="${p.coach}" min="0" step="1"></td>
-      <td><input type="number" data-i="${i}" data-f="security" value="${p.security}" min="0" step="1"></td>
-      <td class="col-rev">${fmt(revenue)}</td>
-      <td class="col-cost">${fmt(nonVenueCost)}</td>
+      <td class="col-name"></td>
+      <td style="text-align:center;">${f.slots}</td>
+      <td style="text-align:center;">${f.sessions}</td>
+      <td>${unitCell}</td>
+      <td class="col-rev">${fmt(f.revenue)}</td>
+      <td class="col-cost">${fmt(f.nonVenueCost)}</td>
     `;
+    tr.querySelector(".col-name").textContent = p.name;
     tbody.appendChild(tr);
   });
 
@@ -419,20 +548,196 @@ function renderRows() {
 function onFieldChange(e) {
   const i = +e.target.dataset.i;
   const f = e.target.dataset.f;
-  if (f === "name") {
-    const oldName = programs[i].name;
-    const newName = e.target.value;
-    Object.keys(schedule).forEach(k => { if (schedule[k] === oldName) schedule[k] = newName; });
-    programs[i].name = newName;
-  } else {
-    programs[i][f] = parseFloat(e.target.value) || 0;
-  }
+  programs[i][f] = parseFloat(e.target.value) || 0;
+  renderRows();
+  recalc();
+  focusField(i, f);
+}
+
+// ---- Definitions ----
+// One source for the hover text on the Settings headers (matched by data-def) and the Definitions block below the table.
+// Keep these in step with programFigures().
+const DEFINITIONS = [
+  { group: "Revenue", items: [
+    { key: "paymentType", term: "Payment type", text: "How often each payer pays. One time: once per season. Per session: once for each week in Weeks / season." },
+    { key: "unitType", term: "Unit type", text: "Who pays. Individual: each person is a paying unit. Team: you enter the number of teams per slot in the calculator." },
+    { key: "payingUnits", term: "Paying units", text: "Individual: the number of paying units in each slot (for example 30 players). Team: the number in each team (for example 8). If a Team program has 0, each team is the paying unit." },
+    { key: "fee", term: "Fee per unit ($)", text: "Dollars charged per paying unit for each payment. For a Team program with 0 paying units, this is the fee per team." },
+    { key: "seasons", term: "Seasons / year", text: "How many seasons the program runs in a year (1 or 2)." }
+  ]},
+  { group: "Scheduling", items: [
+    { key: "weeksPerSeason", term: "Weeks / season", text: "Weeks the program runs in a season. Sets the number of sessions, and the number of payments for Per session programs." },
+    { key: "extraDays", term: "Extra days / season", text: "Sessions outside the weekly rhythm, such as a tournament day. They add sessions, and so security cost, but not payments, and are not on the weekly schedule." }
+  ]},
+  { group: "Costs", items: [
+    { key: "refPerSeason", term: "Referee ($) / season", text: "Dollars per season for each slot, since each slot is one division or level." },
+    { key: "coachPerSeason", term: "Coach ($) / season", text: "Dollars per season for each slot, since each slot is one division or level." },
+    { key: "securityPerSession", term: "Security ($) / session", text: "Dollars for every session of the program." }
+  ]},
+  { group: "How it adds up", items: [
+    { term: "Slots", text: "Each slot on the weekly schedule is one division or level. A program with no slots has no sessions, revenue or cost." },
+    { term: "Sessions per year", text: "slots/week × weeks per season × seasons + extra days × seasons" },
+    { term: "Revenue", text: "seasons × slots/week × payments per season × paying units per slot × fee per unit" },
+    { term: "Cost", text: "seasons × slots/week × (referee + coach) + sessions per year × security" }
+  ]}
+];
+
+function renderDefinitions() {
+  const root = document.getElementById("definitions");
+  root.innerHTML = "";
+  const title = document.createElement("h3");
+  title.textContent = "Definitions";
+  root.appendChild(title);
+  DEFINITIONS.forEach(section => {
+    const h = document.createElement("h3");
+    h.textContent = section.group;
+    const dl = document.createElement("dl");
+    section.items.forEach(item => {
+      const dt = document.createElement("dt");
+      dt.textContent = item.term;
+      const dd = document.createElement("dd");
+      dd.textContent = item.text;
+      dl.append(dt, dd);
+    });
+    root.append(h, dl);
+  });
+  const byKey = {};
+  DEFINITIONS.forEach(s => s.items.forEach(i => { if (i.key) byKey[i.key] = i; }));
+  document.querySelectorAll("th[data-def]").forEach(th => {
+    const d = byKey[th.dataset.def];
+    if (d) th.title = d.term + ": " + d.text;
+  });
+}
+
+// ---- Settings view ----
+const SETTINGS_NUMBER_FIELDS = ["payingUnits", "fee", "weeksPerSeason", "extraDays", "refPerSeason", "coachPerSeason", "securityPerSession"];
+const PAYMENT_TYPES = [["once", "One time"], ["session", "Per session"]];
+const UNIT_TYPES = [["individual", "Individual"], ["team", "Team"]];
+
+function selectHtml(i, field, options, current) {
+  return `<select data-i="${i}" data-f="${field}">` + options.map(([v, label]) =>
+    `<option value="${v}"${String(current) === String(v) ? " selected" : ""}>${label}</option>`).join("") + `</select>`;
+}
+
+// Settings open read-only; the Edit button unlocks them, and leaving Settings locks them again.
+let settingsEditing = false;
+
+function renderSettings() {
+  const tbody = document.getElementById("settings-rows");
+  tbody.innerHTML = "";
+  const editBtn = document.getElementById("edit-settings");
+  editBtn.textContent = settingsEditing ? "Done" : "Edit";
+  editBtn.classList.toggle("active", settingsEditing);
+  document.getElementById("add-program").parentElement.hidden = !settingsEditing;
+  programs.forEach((p, i) => {
+    const tr = document.createElement("tr");
+    if (!settingsEditing) {
+      const label = (opts, v) => (opts.find(o => o[0] === String(v)) || [0, v])[1];
+      const dash = v => (v > 0 ? v : "—");
+      tr.innerHTML = `
+        <td></td>
+        <td>${label(PAYMENT_TYPES, p.paymentType)}</td>
+        <td>${label(UNIT_TYPES, p.unitType)}</td>
+        <td>${p.unitType === "team" ? dash(p.payingUnits) : p.payingUnits}</td>
+        <td>${fmt(p.fee)}</td>
+        <td>${p.seasons}</td>
+        <td>${p.weeksPerSeason}</td>
+        <td>${p.extraDays}</td>
+        <td>${fmt(p.refPerSeason)}</td>
+        <td>${fmt(p.coachPerSeason)}</td>
+        <td>${fmt(p.securityPerSession)}</td>
+        <td></td>
+      `;
+      tr.firstElementChild.textContent = p.name;
+      tbody.appendChild(tr);
+      return;
+    }
+    tr.innerHTML = `
+      <td><input type="text" data-i="${i}" data-f="name"></td>
+      <td>${selectHtml(i, "paymentType", PAYMENT_TYPES, p.paymentType)}</td>
+      <td>${selectHtml(i, "unitType", UNIT_TYPES, p.unitType)}</td>
+      <td><input type="number" data-i="${i}" data-f="payingUnits" value="${p.payingUnits}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="fee" value="${p.fee}" min="0" step="0.01"></td>
+      <td>${selectHtml(i, "seasons", [["1", "1"], ["2", "2"]], p.seasons)}</td>
+      <td><input type="number" data-i="${i}" data-f="weeksPerSeason" value="${p.weeksPerSeason}" min="0" max="52" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="extraDays" value="${p.extraDays}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="refPerSeason" value="${p.refPerSeason}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="coachPerSeason" value="${p.coachPerSeason}" min="0" step="1"></td>
+      <td><input type="number" data-i="${i}" data-f="securityPerSession" value="${p.securityPerSession}" min="0" step="1"></td>
+      <td><button class="row-remove" data-i="${i}" title="Remove program" aria-label="Remove ${p.name.replace(/"/g, "&quot;")}">✕</button></td>
+    `;
+    tr.querySelector('[data-f="name"]').value = p.name;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("input, select").forEach(c => c.addEventListener("input", onSettingChange));
+  tbody.querySelectorAll(".row-remove").forEach(b => b.addEventListener("click", onRemoveProgram));
+}
+
+function refreshCalculator() {
   renderRows();
   renderGrid();
   renderLegend();
   recalc();
-  focusField(i, f);
 }
+
+function onSettingChange(e) {
+  const i = +e.target.dataset.i;
+  const f = e.target.dataset.f;
+  const p = programs[i];
+  if (f === "name") {
+    const oldName = p.name;
+    const newName = e.target.value;
+    Object.keys(schedule).forEach(k => { if (schedule[k] === oldName) schedule[k] = newName; });
+    p.name = newName;
+  } else if (f === "unitType" || f === "paymentType") {
+    p[f] = e.target.value;
+  } else if (f === "seasons") {
+    p.seasons = parseInt(e.target.value, 10) || 1;
+  } else if (SETTINGS_NUMBER_FIELDS.includes(f)) {
+    p[f] = Math.max(0, parseFloat(e.target.value) || 0);
+  }
+  refreshCalculator();
+}
+
+function onRemoveProgram(e) {
+  const i = +e.currentTarget.dataset.i;
+  const p = programs[i];
+  const used = slotsPerWeek(p.name);
+  if (used > 0 && !confirm(`"${p.name}" is on ${used} slot(s) of the weekly schedule. Remove it and clear those slots?`)) return;
+  Object.keys(schedule).forEach(k => { if (schedule[k] === p.name) schedule[k] = ""; });
+  programs.splice(i, 1);
+  renderSettings();
+  refreshCalculator();
+}
+
+document.getElementById("add-program").addEventListener("click", () => {
+  let name = "New program", n = 2;
+  while (programs.some(p => p.name === name)) name = "New program " + n++;
+  programs.push(newProgram(name));
+  renderSettings();
+  refreshCalculator();
+  const inputs = document.querySelectorAll('#settings-rows [data-f="name"]');
+  const last = inputs[inputs.length - 1];
+  if (last) { last.focus(); last.select(); }
+});
+
+document.getElementById("edit-settings").addEventListener("click", () => {
+  settingsEditing = !settingsEditing;
+  renderSettings();
+});
+
+function showView() {
+  const settings = location.hash === "#settings";
+  settingsEditing = false;
+  renderSettings();
+  document.getElementById("calc-view").hidden = settings;
+  document.getElementById("settings-view").hidden = !settings;
+  document.getElementById("nav-calc").classList.toggle("active", !settings);
+  document.getElementById("nav-settings").classList.toggle("active", settings);
+}
+document.getElementById("nav-calc").addEventListener("click", () => { location.hash = ""; });
+document.getElementById("nav-settings").addEventListener("click", () => { location.hash = "settings"; });
+window.addEventListener("hashchange", showView);
 
 function focusField(i, f) {
   const sel = `[data-i="${i}"][data-f="${f}"]`;
@@ -443,9 +748,9 @@ function focusField(i, f) {
 function recalc() {
   let grossRevenue = 0, grossNonVenue = 0;
   programs.forEach(p => {
-    const slots = slotsPerWeek(p.name);
-    grossRevenue += slots * p.weeks * p.players * p.fee;
-    grossNonVenue += slots * p.weeks * (p.ref + p.coach + p.security);
+    const f = programFigures(p);
+    grossRevenue += f.revenue;
+    grossNonVenue += f.nonVenueCost;
   });
 
   const equipment = parseFloat(document.getElementById("equipment").value) || 0;
@@ -512,10 +817,10 @@ if (saved) {
   document.getElementById("equipment").value = saved.equipment || 0;
 }
 
-renderRows();
-renderGrid();
-renderLegend();
-recalc();
+renderDefinitions();
+renderSettings();
+refreshCalculator();
+showView();
 </script>
 </body>
 </html>
