@@ -7,7 +7,7 @@ A single-page tool, served as-is by GitHub Pages. See [README.md](README.md) for
 Every change is documented in a GitHub Issue. Use the `gh` CLI.
 
 1. **Issue first.** Before changing any code, check for an existing issue (`gh issue list`). If none fits, create one with `gh issue create`, using the "Change request" template: problem, proposed change, how to verify.
-2. **One issue per change.** Keep issues small and focused. Split unrelated work into separate issues.
+2. **Group related changes.** Changes that are correlated (same goal, or one depends on the other) can share an issue. Split unrelated work into separate issues.
 3. **Branch per issue.** Name it `issue-<number>-<short-slug>`. Never commit directly to `main`.
 4. **Commits reference the issue.** End the subject or body with `Refs #<number>`.
 5. **Pull request closes the issue.** The PR description includes `Closes #<number>`, a short summary, and what was verified.
