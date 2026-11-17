@@ -1,0 +1,31 @@
+name: Change request
+description: Propose or document a change to the calculator
+labels: ["change"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or goal
+      description: What is wrong, missing, or confusing today? Why does it matter?
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Proposed change
+      description: What should change? Note anything deliberately out of scope.
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How to verify
+      description: Steps to confirm it works. For calculation changes, give a sample scenario and the expected result.
+    validations:
+      required: true
+  - type: checkboxes
+    id: saved-data
+    attributes:
+      label: Saved data
+      options:
+        - label: This change affects the saved-data format or storage key, so it needs a migration
