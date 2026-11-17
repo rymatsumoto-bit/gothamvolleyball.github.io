@@ -4,15 +4,18 @@ A single-page tool, served as-is by GitHub Pages. See [README.md](README.md) for
 
 ## Tracking changes with GitHub Issues
 
-Every change is documented in a GitHub Issue. Use the `gh` CLI.
+Every change is documented in a GitHub Issue. Use the `gh` CLI. Work happens in this order:
 
-1. **Issue first.** Before changing any code, check for an existing issue (`gh issue list`). If none fits, create one with `gh issue create`, using the "Change request" template: problem, proposed change, how to verify.
-2. **Group related changes.** Changes that are correlated (same goal, or one depends on the other) can share an issue. Split unrelated work into separate issues.
-3. **Branch per issue.** Name it `issue-<number>-<short-slug>`. Never commit directly to `main`.
-4. **Commits reference the issue.** End the subject or body with `Refs #<number>`.
-5. **Pull request closes the issue.** The PR description includes `Closes #<number>`, a short summary, and what was verified.
-6. **Comment on the issue** when scope changes, a decision is made, or something is deferred, so the issue is the record of why.
-7. **Ask before outward-facing actions.** Confirm with the user before creating or closing issues, pushing, opening PRs, or merging, unless they have told you to proceed.
+1. **Start with the issues.** Create an issue for each change with `gh issue create`, using the "Change request" template: problem, proposed change, how to verify. Related changes (same goal, or one depends on the other) can share an issue; split unrelated work into separate issues.
+2. **Then create a branch, then code.** Before writing any code, create a working branch from an up-to-date `main` with a short descriptive name (e.g. `dashboard-layout`). Never work directly on `main`. One branch can carry several related issues.
+3. **Run the local dev server.** Start `npm run dev` so the user can see each change live in their browser.
+4. **Iterate until the user is satisfied.** Keep making changes, creating new issues as new work comes up, and check the result in the running page. Comment on the relevant issue when scope changes, a decision is made, or something is deferred, so the issue records why. Do not commit while iterating.
+5. **Commit only when the user says so.** Group commits by issue, and end each commit message with `Refs #<number>`.
+6. **Then open the PR, and merge only when asked.** The PR description includes `Closes #<number>` for every issue it covers, a short summary, and what was verified. Do not merge unless the user asks.
+
+Creating issues, pushing, opening PRs and merging are outward-facing: the user has said when to do each, so do not do them ahead of that. If a step is unclear, ask.
+
+Run git and `gh` commands one at a time, not chained together, so each step can be approved and any refusal is easy to pin down.
 
 ## Project constraints
 
