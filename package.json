@@ -1,11 +1,24 @@
 {
   "name": "gotham-volleyball-breakeven-calculator",
   "private": true,
-  "description": "Local dev tooling only. GitHub Pages serves index.html directly.",
+  "type": "module",
+  "description": "Gotham Volleyball breakeven calculator. Built with Vite and deployed to GitHub Pages by a GitHub Actions workflow.",
   "scripts": {
-    "dev": "live-server --port=8080 --open=/ --watch=index.html"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 8080",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "live-server": "1.2.2"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }
