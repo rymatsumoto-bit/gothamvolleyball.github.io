@@ -1,6 +1,6 @@
 # Gotham Volleyball breakeven calculator
 
-A single-page tool, served as-is by GitHub Pages. See [README.md](README.md) for what it does.
+A client-side React + TypeScript app, built with Vite and deployed to GitHub Pages by a GitHub Actions workflow. See [README.md](README.md) for what it does, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it's built, where code lives, how data flows and how to make common changes. Read the guide before changing code, and update it in the same branch when a change makes it out of date.
 
 ## Tracking changes with GitHub Issues
 
@@ -19,10 +19,11 @@ Run git and `gh` commands one at a time, not chained together, so each step can 
 
 ## Project constraints
 
-- **Single file, no build step.** `index.html` holds the HTML, CSS and JS, and GitHub Pages serves it directly. Don't add a bundler or framework. `package.json` exists only for local dev tooling.
-- **Saved data is sacred.** Inputs are stored in each visitor's browser under the `localStorage` key `gotham-gym-budget-v6`. Do not rename the key or change the saved data shape without a migration that reads the old data and writes the new. Bumping the version without a migration silently wipes every user's saved inputs.
-- **No network calls, no tracking.** The tool is fully client-side and nothing leaves the user's browser.
-- **Calculation changes need an issue and a worked example.** State the expected result for a sample scenario in the issue and check it after the change.
+- **Stack: Vite + TypeScript + React.** Chosen in #7. Stay with free, open-source, mainstream tools that volunteers can maintain. No paid services, backends or databases. Add a dependency only when it earns its place, and prefer one with a large community.
+- **Logic in `src/model/`, display in `src/components/`.** The model has no React and is unit-tested; components don't calculate. Keep `src/definitions.ts` in step with `calc.ts`. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- **Saved data is sacred.** Inputs are stored in each visitor's browser under the `localStorage` key `gotham-gym-budget-v6`. Do not rename the key or change the saved data shape (`SavedState` in `src/model/types.ts`) without a migration that reads the old data and writes the new, plus a test in `src/model/storage.test.ts`. Bumping the version without a migration silently wipes every user's saved inputs.
+- **No network calls, no tracking.** The tool is fully client-side and nothing leaves the user's browser. Bundle every library; don't load scripts, fonts or data from a CDN at runtime.
+- **Calculation changes need an issue and a worked example.** State the expected result for a sample scenario in the issue, add it as a test in `src/model/calc.test.ts`, and check it in the browser after the change.
 
 ## Local development
 
@@ -31,10 +32,15 @@ npm install
 npm run dev
 ```
 
-Serves http://localhost:8080 with live reload.
+Serves http://localhost:8080 with hot reload. Other scripts:
+
+- `npm test` runs the unit tests (Vitest).
+- `npm run build` typechecks and builds the production site into `dist/`.
+- `npm run preview` serves the built `dist/` at http://localhost:8080, as GitHub Pages will.
 
 ## Verification before calling work done
 
+- Run `npm test` and `npm run build`; both must pass.
 - Run `npm run dev` and exercise the change in a browser at desktop and phone (~400px) widths.
 - Confirm saved inputs from before the change still load.
 - Check the browser console for errors.
