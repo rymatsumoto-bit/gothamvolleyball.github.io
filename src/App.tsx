@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FixedCostsCard } from "./components/FixedCostsCard";
+import type { ProcessingField, ProcessingSystem } from "./components/PaymentSystemsCard";
 import { ProgramTable } from "./components/ProgramTable";
 import { Results } from "./components/Results";
+import { SafetyMarginCard } from "./components/SafetyMarginCard";
 import { ScheduleGrid } from "./components/ScheduleGrid";
 import { SettingsView, type SettingsNumberField } from "./components/SettingsView";
 import { totals as computeTotals, slotsPerWeek } from "./model/calc";
 import { newProgram } from "./model/program";
 import { reassignSlots } from "./model/schedule";
 import { FIXED_COST_KEYS, fromSaved, readSaved, toSaved, writeSaved } from "./model/storage";
-import type { FixedCostKey, FixedCosts, Program, Schedule } from "./model/types";
+import type { FixedCostKey, FixedCosts, PaymentRates, Program, Schedule } from "./model/types";
 
 type View = "calc" | "settings";
 
@@ -27,6 +28,7 @@ export function App() {
     FIXED_COST_KEYS.forEach((k) => { t[k] = String(initial.fixed[k]); });
     return t;
   });
+  const [rates, setRates] = useState<PaymentRates>(initial.rates);
   const [view, setView] = useState<View>(viewFromHash);
   // Settings open read-only; Edit unlocks them, and leaving Settings locks them again.
   const [editing, setEditing] = useState(false);
@@ -39,7 +41,7 @@ export function App() {
     return f;
   }, [fixedText]);
 
-  const totals = useMemo(() => computeTotals(programs, schedule, fixed), [programs, schedule, fixed]);
+  const totals = useMemo(() => computeTotals(programs, schedule, fixed, rates), [programs, schedule, fixed, rates]);
 
   useEffect(() => {
     const onHash = () => { setView(viewFromHash()); setEditing(false); };
@@ -48,14 +50,18 @@ export function App() {
   }, []);
 
   const persist = () => {
-    const ok = writeSaved(toSaved(programs, schedule, fixed));
+    const ok = writeSaved(toSaved(programs, schedule, fixed, rates));
     setSaveStatus(ok ? "Saved " + new Date().toLocaleTimeString() : "Couldn't save in this browser");
     clearTimeout(statusTimer.current);
     statusTimer.current = window.setTimeout(() => setSaveStatus(""), 2500);
   };
 
   // Autosave on every change, as the single-file version did. This also rewrites older saves in the current shape.
-  useEffect(persist, [programs, schedule, fixed]);
+  useEffect(persist, [programs, schedule, fixed, rates]);
+
+  const setProcessing = (system: ProcessingSystem, field: ProcessingField, text: string) =>
+    setRates((r) => ({ ...r, [system]: { ...r[system], [field]: Math.max(0, parseFloat(text) || 0) } }));
+  const setArbiter = (text: string) => setRates((r) => ({ ...r, arbiterPerPayout: Math.max(0, parseFloat(text) || 0) }));
 
   const updateProgram = (i: number, patch: Partial<Program>) =>
     setPrograms((ps) => ps.map((p, j) => (j === i ? { ...p, ...patch } : p)));
@@ -65,7 +71,7 @@ export function App() {
     updateProgram(i, { name });
   };
 
-  const selectSetting = (i: number, field: "paymentType" | "unitType" | "seasons", value: string) => {
+  const selectSetting = (i: number, field: "paymentSystem" | "paymentType" | "unitType" | "seasons", value: string) => {
     if (field === "seasons") updateProgram(i, { seasons: parseInt(value, 10) || 1 });
     else updateProgram(i, { [field]: value } as Partial<Program>);
   };
@@ -118,20 +124,20 @@ export function App() {
           <h2>Program revenues and costs</h2>
           <ProgramTable
             programs={programs} schedule={schedule} totals={totals}
-            processingFee={fixedText.processingFee}
-            onProcessingFee={(t) => setFixedText((f) => ({ ...f, processingFee: t }))}
             onTeams={(i, t) => updateProgram(i, { teams: parseFloat(t) || 0 })}
           />
 
-          <h2>Fixed costs</h2>
-          <FixedCostsCard text={fixedText} fixed={fixed} totals={totals} onChange={(k, t) => setFixedText((f) => ({ ...f, [k]: t }))} />
+          <h2>Safety margin</h2>
+          <SafetyMarginCard text={fixedText.reserve} totals={totals} onChange={(t) => setFixedText((f) => ({ ...f, reserve: t }))} />
 
           <h2>Result</h2>
           <Results totals={totals} />
         </div>
       ) : (
         <SettingsView
-          programs={programs} editing={editing} onToggleEdit={() => setEditing((e) => !e)}
+          programs={programs} rates={rates} fixedText={fixedText} fixed={fixed} totals={totals}
+          editing={editing} onToggleEdit={() => setEditing((e) => !e)}
+          onProcessing={setProcessing} onArbiter={setArbiter} onFixed={(k, t) => setFixedText((f) => ({ ...f, [k]: t }))}
           onRename={rename} onSelect={selectSetting} onNumber={numberSetting} onRemove={remove} onAdd={add}
         />
       )}

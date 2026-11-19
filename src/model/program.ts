@@ -3,9 +3,10 @@ import type { Program } from "./types";
 export function newProgram(name: string, overrides: Partial<Program> = {}): Program {
   return Object.assign(
     {
-      name, paymentType: "session", unitType: "individual", payingUnits: 0, fee: 0,
+      name, paymentSystem: "stripe", paymentType: "session", unitType: "individual", payingUnits: 0, fee: 0,
       seasons: 2, weeksPerSeason: 0, extraDays: 0,
       refPerSeason: 0, coachPerSeason: 0, securityPerSession: 0,
+      payoutsPerSeason: 4, peoplePaidPerSlot: 0,
       teams: 0,
     } satisfies Program,
     overrides,
@@ -14,8 +15,8 @@ export function newProgram(name: string, overrides: Partial<Program> = {}): Prog
 
 export const DEFAULT_PROGRAMS: readonly Program[] = [
   newProgram("Open Play", { payingUnits: 30 }),
-  newProgram("Power Class", { paymentType: "once", weeksPerSeason: 10, payingUnits: 30 }),
-  newProgram("Division Play", { paymentType: "once", unitType: "team", payingUnits: 8, weeksPerSeason: 10, extraDays: 1, teams: 8 }),
+  newProgram("Power Class", { paymentType: "once", weeksPerSeason: 10, payingUnits: 30, peoplePaidPerSlot: 2 }),
+  newProgram("Division Play", { paymentType: "once", unitType: "team", payingUnits: 8, weeksPerSeason: 10, extraDays: 1, teams: 8, peoplePaidPerSlot: 2 }),
   newProgram("Friendship Tournaments", { unitType: "team" }),
 ];
 

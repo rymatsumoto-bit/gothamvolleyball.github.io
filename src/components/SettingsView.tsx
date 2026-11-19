@@ -1,23 +1,35 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { DEFINITIONS, definitionTitle } from "../definitions";
 import { fmt } from "../model/calc";
-import type { Program } from "../model/types";
+import type { Totals } from "../model/calc";
+import type { FixedCostKey, FixedCosts, PaymentRates, Program } from "../model/types";
+import { FixedCostsCard } from "./FixedCostsCard";
 import { NumberInput } from "./NumberInput";
+import { PaymentSystemsCard, type ProcessingField, type ProcessingSystem } from "./PaymentSystemsCard";
 
+const PAYMENT_SYSTEMS: [string, string][] = [["stripe", "Stripe"], ["leagueApps", "LeagueApps"]];
 const PAYMENT_TYPES: [string, string][] = [["once", "One time"], ["session", "Per session"]];
 const UNIT_TYPES: [string, string][] = [["individual", "Individual"], ["team", "Team"]];
 const SEASONS: [string, string][] = [["1", "1"], ["2", "2"]];
 
 /** Numeric Settings fields, edited with NumberInput and clamped at 0. */
 export type SettingsNumberField =
-  "payingUnits" | "fee" | "weeksPerSeason" | "extraDays" | "refPerSeason" | "coachPerSeason" | "securityPerSession";
+  "payingUnits" | "fee" | "weeksPerSeason" | "extraDays" | "refPerSeason" | "coachPerSeason" | "securityPerSession"
+  | "payoutsPerSeason" | "peoplePaidPerSlot";
 
 interface Props {
   programs: Program[];
+  rates: PaymentRates;
+  fixedText: Record<FixedCostKey, string>;
+  fixed: FixedCosts;
+  totals: Totals;
   editing: boolean;
   onToggleEdit: () => void;
+  onProcessing: (system: ProcessingSystem, field: ProcessingField, text: string) => void;
+  onArbiter: (text: string) => void;
+  onFixed: (key: FixedCostKey, text: string) => void;
   onRename: (index: number, name: string) => void;
-  onSelect: (index: number, field: "paymentType" | "unitType" | "seasons", value: string) => void;
+  onSelect: (index: number, field: "paymentSystem" | "paymentType" | "unitType" | "seasons", value: string) => void;
   onNumber: (index: number, field: SettingsNumberField, text: string) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
@@ -40,7 +52,7 @@ function Th({ def, children }: { def: string; children: ReactNode }) {
 }
 
 export function SettingsView(props: Props) {
-  const { programs, editing, onToggleEdit, onRename, onSelect, onNumber, onRemove, onAdd } = props;
+  const { programs, rates, fixedText, fixed, totals, editing, onToggleEdit, onProcessing, onArbiter, onFixed, onRename, onSelect, onNumber, onRemove, onAdd } = props;
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const focusNewName = useRef(false);
 
@@ -61,9 +73,11 @@ export function SettingsView(props: Props) {
   return (
     <div id="settings-view">
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <h2>Program settings</h2>
+        <h2>Settings</h2>
         <button className={"btn" + (editing ? " active" : "")} onClick={onToggleEdit}>{editing ? "Done" : "Edit"}</button>
       </div>
+      <PaymentSystemsCard rates={rates} editing={editing} onProcessing={onProcessing} onArbiter={onArbiter} />
+      <h2>Program settings</h2>
       <div className="card">
         <p className="note" style={{ marginTop: 0 }}>
           Define how each program earns revenue and how it is scheduled. Each slot on the weekly schedule is one division or level.
@@ -73,13 +87,14 @@ export function SettingsView(props: Props) {
             <thead>
               <tr className="group-head">
                 <th />
-                <th colSpan={5}><span>Revenue</span></th>
+                <th colSpan={6}><span>Revenue</span></th>
                 <th colSpan={2}><span>Scheduling</span></th>
-                <th colSpan={3}><span>Costs</span></th>
+                <th colSpan={5}><span>Costs</span></th>
                 <th />
               </tr>
               <tr>
                 <th>Program</th>
+                <Th def="paymentSystem">Payment<br />system</Th>
                 <Th def="paymentType">Payment<br />type</Th>
                 <Th def="unitType">Unit<br />type</Th>
                 <Th def="payingUnits">Paying<br />units<br /><span style={{ fontWeight: 400, textTransform: "none" }}>(per team if Team)</span></Th>
@@ -90,6 +105,8 @@ export function SettingsView(props: Props) {
                 <Th def="refPerSeason">Referee ($)<br />/ season</Th>
                 <Th def="coachPerSeason">Coach ($)<br />/ season</Th>
                 <Th def="securityPerSession">Security ($)<br />/ session</Th>
+                <Th def="payoutsPerSeason">Payouts<br />/ season</Th>
+                <Th def="peoplePaidPerSlot">People paid<br />/ slot</Th>
                 <th />
               </tr>
             </thead>
@@ -98,6 +115,7 @@ export function SettingsView(props: Props) {
                 editing ? (
                   <tr key={i}>
                     <td><input type="text" value={p.name} onChange={(e) => onRename(i, e.target.value)} /></td>
+                    <td><Select options={PAYMENT_SYSTEMS} value={p.paymentSystem} onChange={(v) => onSelect(i, "paymentSystem", v)} /></td>
                     <td><Select options={PAYMENT_TYPES} value={p.paymentType} onChange={(v) => onSelect(i, "paymentType", v)} /></td>
                     <td><Select options={UNIT_TYPES} value={p.unitType} onChange={(v) => onSelect(i, "unitType", v)} /></td>
                     <td>{num(i, "payingUnits", p, { step: "1" })}</td>
@@ -108,6 +126,8 @@ export function SettingsView(props: Props) {
                     <td>{num(i, "refPerSeason", p, { step: "1" })}</td>
                     <td>{num(i, "coachPerSeason", p, { step: "1" })}</td>
                     <td>{num(i, "securityPerSession", p, { step: "1" })}</td>
+                    <td>{num(i, "payoutsPerSeason", p, { step: "1" })}</td>
+                    <td>{num(i, "peoplePaidPerSlot", p, { step: "1" })}</td>
                     <td>
                       <button className="row-remove" title="Remove program" aria-label={`Remove ${p.name}`} onClick={() => onRemove(i)}>✕</button>
                     </td>
@@ -115,6 +135,7 @@ export function SettingsView(props: Props) {
                 ) : (
                   <tr key={i}>
                     <td>{p.name}</td>
+                    <td>{label(PAYMENT_SYSTEMS, p.paymentSystem)}</td>
                     <td>{label(PAYMENT_TYPES, p.paymentType)}</td>
                     <td>{label(UNIT_TYPES, p.unitType)}</td>
                     <td>{p.unitType === "team" ? dash(p.payingUnits) : p.payingUnits}</td>
@@ -125,6 +146,8 @@ export function SettingsView(props: Props) {
                     <td>{fmt(p.refPerSeason)}</td>
                     <td>{fmt(p.coachPerSeason)}</td>
                     <td>{fmt(p.securityPerSession)}</td>
+                    <td>{p.payoutsPerSeason}</td>
+                    <td>{p.peoplePaidPerSlot}</td>
                     <td />
                   </tr>
                 ),
@@ -150,6 +173,8 @@ export function SettingsView(props: Props) {
           ])}
         </div>
       </div>
+      <h2>Other costs</h2>
+      <FixedCostsCard text={fixedText} fixed={fixed} totals={totals} editing={editing} onChange={onFixed} />
     </div>
   );
 }

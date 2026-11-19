@@ -9,6 +9,7 @@ export interface Definition {
 
 export const DEFINITIONS: { group: string; items: Definition[] }[] = [
   { group: "Revenue", items: [
+    { key: "paymentSystem", term: "Payment system", text: "The system this program's payments come in through, Stripe or LeagueApps. Its rate (a percentage plus a flat amount per transaction) is set in Payment systems." },
     { key: "paymentType", term: "Payment type", text: "How often each payer pays. One time: once per season. Per session: once for each week in Weeks / season." },
     { key: "unitType", term: "Unit type", text: "Who pays. Individual: each person is a paying unit. Team: you enter the number of teams per slot in the calculator." },
     { key: "payingUnits", term: "Paying units", text: "Individual: the number of paying units in each slot (for example 30 players). Team: the number in each team (for example 8). If a Team program has 0, each team is the paying unit." },
@@ -23,12 +24,18 @@ export const DEFINITIONS: { group: string; items: Definition[] }[] = [
     { key: "refPerSeason", term: "Referee ($) / season", text: "Dollars per season for each slot, since each slot is one division or level." },
     { key: "coachPerSeason", term: "Coach ($) / season", text: "Dollars per season for each slot, since each slot is one division or level." },
     { key: "securityPerSession", term: "Security ($) / session", text: "Dollars for every session of the program." },
+    { key: "payoutsPerSeason", term: "Payouts / season", text: "How many times a season coaches and referees are paid through Arbiter. Each payout to each person is one Arbiter transaction." },
+    { key: "peoplePaidPerSlot", term: "People paid / slot", text: "Coaches and referees paid for each slot, on average. Use 0 for a program with none, so it pays no Arbiter fee." },
   ]},
   { group: "How it adds up", items: [
     { term: "Slots", text: "Each slot on the weekly schedule is one division or level. A program with no slots has no sessions, revenue or cost." },
     { term: "Sessions per year", text: "slots/week × weeks per season × seasons + extra days × seasons" },
     { term: "Revenue", text: "seasons × slots/week × payments per season × paying units per slot × fee per unit" },
     { term: "Cost", text: "seasons × slots/week × (referee + coach) + sessions per year × security" },
+    { term: "Transactions", text: "seasons × slots/week × payments per season × paying units per slot. Each paying unit's payment is one transaction." },
+    { term: "Processing fee", text: "revenue × the payment system's % + transactions × the payment system's flat amount" },
+    { term: "Arbiter fee", text: "Arbiter rate × people paid per slot × slots/week × payouts per season × seasons" },
+    { term: "Breakeven", text: "revenue − processing fees − cost − Arbiter fees − other costs, then reduced by the safety margin" },
   ]},
 ];
 

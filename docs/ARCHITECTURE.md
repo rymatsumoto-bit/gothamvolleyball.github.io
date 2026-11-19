@@ -26,19 +26,22 @@ src/
   styles.css            All styles
   definitions.ts        Text for the Settings column tooltips and the Definitions list
   model/                Plain TypeScript, no React — the logic, and what the tests cover
-    types.ts            The data model: Program, Schedule, FixedCosts, SavedState
-    calc.ts             The formulas: per-program figures and the overall totals
+    types.ts            The data model: Program, Schedule, FixedCosts, PaymentRates, SavedState
+    calc.ts             The formulas: per-program figures and fees, and the overall totals
+    rates.ts            Default payment rates (Stripe, LeagueApps, Arbiter)
     program.ts          Default programs, and the migration that reads older saves
     schedule.ts         Days, time slots, program colours
     storage.ts          Loading and saving in the browser (localStorage)
-    calc.test.ts        Tests for the formulas, including the worked example from #5
+    calc.test.ts        Tests for the formulas, including the worked examples from #5 and #8
     storage.test.ts     Tests for loading older saves and the saved shape
   components/           The screens, made of React components
     ScheduleGrid.tsx    Weekly schedule grid and legend
-    ProgramTable.tsx    Program revenues and costs table, with the Fees row
-    FixedCostsCard.tsx  Fixed costs
+    ProgramTable.tsx    Program revenues and costs table; the Fees row shows totals from Settings
+    PaymentSystemsCard.tsx  Settings: the Stripe, LeagueApps and Arbiter rates
+    FixedCostsCard.tsx  Settings: the "Other costs" card (party, equipment, insurance, other)
+    SafetyMarginCard.tsx  Calculator page: the safety margin, which is not a cost (saved with the other costs as `reserve`)
     Results.tsx         Result tiles and the breakeven banner
-    SettingsView.tsx    Settings screen: read-only view, Edit mode, definitions
+    SettingsView.tsx    Settings screen: payment systems, programs, other costs, definitions; read-only view and Edit mode
     NumberInput.tsx     Number field that keeps partly typed values like "1."
 .github/workflows/deploy.yml   Test, build and publish to GitHub Pages
 ```
@@ -48,7 +51,7 @@ The split that matters most: **logic goes in `src/model/`, display goes in `src/
 ## How data flows
 
 1. On load, `App.tsx` reads the saved data from the browser with `readSaved()` and turns it into current state with `fromSaved()` (`storage.ts`). Older saves are upgraded on the way in by `migrateProgram()` (`program.ts`).
-2. State lives in `App.tsx`: the programs, the schedule and the fixed costs. Components get it as props and report edits back through callbacks such as `onRename` or `onTeams`.
+2. State lives in `App.tsx`: the programs, the schedule, the other costs and safety margin (`FixedCosts` in the code, kept for the saved shape) and the payment rates. Components get it as props and report edits back through callbacks such as `onRename` or `onTeams`.
 3. Every change recalculates the totals with `totals()` (`calc.ts`) and saves straight away (autosave). The Save button saves again and shows the time.
 4. Settings vs Calculator is just the URL: `#settings` shows Settings, anything else shows the calculator. Settings open read-only; Edit unlocks them, and leaving Settings locks them again.
 
@@ -60,6 +63,7 @@ So:
 
 - Never rename the key.
 - To change the saved shape, extend `migrateProgram()` (or `fromSaved()`) so it reads the old shape and produces the new one. Then add a test in `storage.test.ts` that loads an old save and checks that the results haven't changed.
+- Payment rates (`paymentRates`) came with #8. A save without them has one global `processingFee` percentage; `fromSaved()` turns it into both systems' percentage with no flat fee and no Arbiter, so results don't change. `processingFee` is only ever read, never written.
 - Fields from older versions keep working: `migrateProgram()` already converts every earlier program shape. Leave those branches alone unless you have a test that proves the change is safe.
 
 ## Common tasks

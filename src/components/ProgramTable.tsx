@@ -6,14 +6,12 @@ interface Props {
   programs: Program[];
   schedule: Schedule;
   totals: Totals;
-  processingFee: string;
-  onProcessingFee: (text: string) => void;
   onTeams: (index: number, text: string) => void;
 }
 
 const footRowStyle = { fontWeight: 500, borderTop: "1px solid var(--border-strong)" };
 
-export function ProgramTable({ programs, schedule, totals, processingFee, onProcessingFee, onTeams }: Props) {
+export function ProgramTable({ programs, schedule, totals, onTeams }: Props) {
   return (
     <div className="card">
       <div className="table-scroll">
@@ -60,29 +58,22 @@ export function ProgramTable({ programs, schedule, totals, processingFee, onProc
               <td className="col-cost" id="total-nonvenue-row">{fmt(totals.grossNonVenue)}</td>
             </tr>
             <tr>
-              <td style={{ whiteSpace: "nowrap" }}>
-                Fees
-                <input
-                  type="number" id="processing-fee" min="0" max="20" step="0.1"
-                  value={processingFee} onChange={(e) => onProcessingFee(e.target.value)}
-                  style={{ width: 60, display: "inline-block", marginLeft: 6 }}
-                />%
-              </td>
+              <td>Fees <a href="#settings">(Settings)</a></td>
               <td /><td /><td />
               <td className="col-rev" id="fees-revenue-row">{"-" + fmt(totals.feeOnRevenue)}</td>
-              <td className="col-cost" id="fees-cost-row">{fmt(0)}</td>
+              <td className="col-cost" id="fees-cost-row">{fmt(totals.payoutFees)}</td>
             </tr>
             <tr style={footRowStyle}>
               <td>Net total</td>
               <td /><td /><td />
               <td className="col-rev" id="net-total-revenue-row">{fmt(totals.netRevenue)}</td>
-              <td className="col-cost" id="net-total-cost-row">{fmt(totals.grossNonVenue)}</td>
+              <td className="col-cost" id="net-total-cost-row">{fmt(totals.grossNonVenue + totals.payoutFees)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
       <p className="note">
-        Add, remove or rename programs, and set their payments, paying units, fee per unit, schedule and costs, in{" "}
+        Add, remove or rename programs, and set their payment system, payments, paying units, fee per unit, schedule, costs and fees, in{" "}
         <a href="#settings">Settings</a>. Only the number of teams is entered here, per slot: each slot on the schedule is one division or level.
       </p>
     </div>
