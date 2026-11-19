@@ -16,6 +16,7 @@ export function Results({ totals }: { totals: Totals }) {
         <div className="metric">
           <p className="metric-label">Total non-venue costs</p>
           <p className="metric-value" id="total-nonvenue">{fmt(totals.totalNonVenue)}</p>
+          {totals.payoutFees > 0 && <p className="metric-sub">{"includes " + fmt(totals.payoutFees) + " Arbiter fees"}</p>}
         </div>
         <div className="metric highlight">
           <p className="metric-label">Max annual venue budget (breakeven)</p>
